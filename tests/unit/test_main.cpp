@@ -163,6 +163,7 @@ void testDiscovery() {
     expect(detector.isRunning(), "Fortnite process detector matches configured executable");
 
     auto network = std::make_shared<MockNetworkProvider>();
+    network->endpoints.push_back({"127.0.0.1", 10809, "tcp", {}, 100, 10.0, true});
     network->endpoints.push_back({"1.2.3.4", 443, "tcp", {}, 1, 0.0, false});
     network->endpoints.push_back({"5.6.7.8", 9000, "udp", {}, 5, 1.0, true});
     const auto endpoints = proxima::discovery::EndpointDiscovery(network).discover(1234);
