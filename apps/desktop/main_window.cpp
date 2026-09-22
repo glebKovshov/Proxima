@@ -26,6 +26,7 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QStandardPaths>
+#include <QStackedLayout>
 #include <QStyle>
 #include <QSystemTrayIcon>
 #include <QTimer>
@@ -275,7 +276,46 @@ void MainWindow::buildUi() {
     footer->addWidget(exportButton_);
     footer->addWidget(settingsButton);
     outer->addLayout(footer);
-    setCentralWidget(root);
+
+    auto* canvas = new QWidget;
+    auto* layers = new QStackedLayout(canvas);
+    layers->setStackingMode(QStackedLayout::StackAll);
+    layers->addWidget(root);
+
+    loadingOverlay_ = new QFrame;
+    loadingOverlay_->setObjectName("startupLoadingOverlay");
+    loadingOverlay_->setStyleSheet(
+        "QFrame#startupLoadingOverlay { background: rgba(5, 8, 14, 218); }"
+        "QFrame#startupLoadingCard { background: #171b22; border: 1px solid #36516e; border-radius: 16px; }"
+        "QLabel#startupLoadingTitle { color: #f4f7fb; font-size: 19px; font-weight: 800; letter-spacing: 2px; }"
+        "QLabel#startupLoadingDetail { color: #9eacc0; font-size: 12px; }"
+        "QProgressBar#startupLoadingProgress { background: #10151c; border: 0; border-radius: 3px; min-height: 6px; max-height: 6px; }"
+        "QProgressBar#startupLoadingProgress::chunk { background: #72b7ff; border-radius: 3px; }"
+    );
+    auto* overlayLayout = new QVBoxLayout(loadingOverlay_);
+    overlayLayout->setContentsMargins(24, 24, 24, 24);
+
+    auto* loadingCard = new QFrame(loadingOverlay_);
+    loadingCard->setObjectName("startupLoadingCard");
+    loadingCard->setMaximumWidth(430);
+    auto* loadingCardLayout = new QVBoxLayout(loadingCard);
+    loadingCardLayout->setContentsMargins(34, 30, 34, 30);
+    loadingCardLayout->setSpacing(12);
+    loadingTitle_ = makeLabel("PROXIMA", {});
+    loadingTitle_->setObjectName("startupLoadingTitle");
+    loadingDetail_ = makeLabel("Устанавливаем соединение и вычисляем метрики…", {});
+    loadingDetail_->setObjectName("startupLoadingDetail");
+    loadingProgress_ = new QProgressBar;
+    loadingProgress_->setObjectName("startupLoadingProgress");
+    loadingProgress_->setRange(0, 0);
+    loadingProgress_->setTextVisible(false);
+    loadingCardLayout->addWidget(loadingTitle_);
+    loadingCardLayout->addWidget(loadingDetail_);
+    loadingCardLayout->addSpacing(8);
+    loadingCardLayout->addWidget(loadingProgress_);
+    overlayLayout->addWidget(loadingCard, 0, Qt::AlignCenter);
+    layers->addWidget(loadingOverlay_);
+    setCentralWidget(canvas);
 }
 
 void MainWindow::configureTray() {
@@ -423,6 +463,11 @@ void MainWindow::updateMetrics(const core::RouteMetrics& metrics) {
         .arg(metricText(metrics.rttAvgMs))
         .arg(QString::fromStdString(scored.label)));
     if (endpointLabel_->text() == "—") endpointLabel_->setText(QString::fromStdString(directTransport_->endpoint()));
+
+    if (startupLoading_ && (metrics.sampleCount > 0 || metrics.packetLossPct > 0.0)) {
+        startupLoading_ = false;
+        loadingOverlay_->hide();
+    }
 }
 
 void MainWindow::runDiagnostics() {

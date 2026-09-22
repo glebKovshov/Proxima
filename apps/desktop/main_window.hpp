@@ -21,6 +21,7 @@
 
 class QLabel;
 class QCloseEvent;
+class QFrame;
 class QListWidget;
 class QPushButton;
 class QProgressBar;
@@ -61,6 +62,8 @@ private:
     QLabel* diagnosticsStatus_{nullptr};
     QLabel* backendStatus_{nullptr};
     QLabel* stateLabel_{nullptr};
+    QLabel* loadingTitle_{nullptr};
+    QLabel* loadingDetail_{nullptr};
     QLabel* metricCurrent_{nullptr};
     QLabel* metricMinimum_{nullptr};
     QLabel* metricAverage_{nullptr};
@@ -73,6 +76,8 @@ private:
     QPushButton* diagnosticsButton_{nullptr};
     QPushButton* exportButton_{nullptr};
     QProgressBar* diagnosticsProgress_{nullptr};
+    QProgressBar* loadingProgress_{nullptr};
+    QFrame* loadingOverlay_{nullptr};
     QTimer* processTimer_{nullptr};
     QTimer* measurementTimer_{nullptr};
     QNetworkAccessManager* networkManager_{nullptr};
@@ -91,6 +96,7 @@ private:
     core::RouteMetrics lastMetrics_;
     core::ApplicationState applicationState_{core::ApplicationState::Starting};
     bool fortniteRunning_{false};
+    bool startupLoading_{true};
     bool closeToTray_{true};
 };
 
