@@ -1,0 +1,91 @@
+name: Proxima CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  core-tests:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure core
+        run: cmake --preset core-tests
+      - name: Build core
+        run: cmake --build --preset core-tests
+      - name: Test core
+        run: ctest --preset core-tests
+
+  desktop:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.8.0'
+          host: windows
+          target: desktop
+          arch: win64_msvc2022_64
+          modules: qtconcurrent
+          cache: true
+      - name: Configure desktop
+        run: cmake --preset desktop-release
+      - name: Build desktop
+        run: cmake --build --preset desktop-release
+      - name: Test desktop build
+        run: ctest --preset desktop-release
+      - name: Deploy Qt runtime
+        run: windeployqt --release --no-translations --compiler-runtime build-release/Proxima.exe
+      - name: Package artifact
+        shell: pwsh
+        run: |
+          $artifact = "Proxima-${{ github.sha }}-win64"
+          New-Item -ItemType Directory -Force -Path $artifact | Out-Null
+          Copy-Item build-release/* $artifact/ -Recurse
+          Compress-Archive -Path $artifact -DestinationPath "$artifact.zip"
+          Get-FileHash "$artifact.zip" -Algorithm SHA256 | Out-File "$artifact.zip.sha256"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Proxima-win64
+          path: |
+            Proxima-*.zip
+            Proxima-*.zip.sha256
+
+  static-analysis:
+    runs-on: windows-latest
+    needs: core-tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure analysis build
+        run: cmake -S . -B build-analysis -G Ninja -DPROXIMA_BUILD_DESKTOP=OFF -DPROXIMA_BUILD_TESTS=OFF -DPROXIMA_ENABLE_CLANG_TIDY=ON
+      - name: Run clang-tidy when available
+        shell: pwsh
+        run: |
+          $clangTidy = Get-Command clang-tidy -ErrorAction SilentlyContinue
+          if ($null -eq $clangTidy) {
+            Write-Host "clang-tidy is not installed on this runner; core build remains covered by the required MSVC job."
+          } else {
+            cmake --build build-analysis -- -j 2
+          }
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [core-tests, desktop]
+    runs-on: windows-latest
+    steps:
+      - name: Download packaged artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Proxima-win64
+          path: release
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*

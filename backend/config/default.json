@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "1.0",
+  "minClientVersion": "0.1.0",
+  "latestVersion": "0.1.0",
+  "maintenanceMode": false,
+  "gameId": "fortnite",
+  "displayName": "Fortnite",
+  "region": "europe",
+  "executableNames": [
+    "FortniteClient-Win64-Shipping.exe",
+    "FortniteClient-Win64-Shipping_BE.exe",
+    "FortniteClient-Win64-Shipping_EAC.exe"
+  ],
+  "diagnosticEndpoints": [
+    "ping.epicgames.com",
+    "www.epicgames.com"
+  ],
+  "scoring": {
+    "rttWeight": 0.45,
+    "jitterWeight": 0.20,
+    "packetLossWeight": 0.25,
+    "stabilityWeight": 0.10,
+    "idealRttMs": 20.0,
+    "maxRttMs": 200.0,
+    "maxJitterMs": 50.0,
+    "maxPacketLossPct": 10.0,
+    "excellentThreshold": 90.0,
+    "goodThreshold": 75.0,
+    "unstableThreshold": 50.0
+  },
+  "relays": []
+}

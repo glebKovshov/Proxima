@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Proxima backend configuration",
+  "type": "object",
+  "required": ["schemaVersion", "gameId", "diagnosticEndpoints"],
+  "properties": {
+    "schemaVersion": { "type": "string", "const": "1.0" },
+    "minClientVersion": { "type": "string" },
+    "latestVersion": { "type": "string" },
+    "maintenanceMode": { "type": "boolean" },
+    "gameId": { "type": "string", "const": "fortnite" },
+    "displayName": { "type": "string" },
+    "region": { "type": "string", "const": "europe" },
+    "executableNames": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "diagnosticEndpoints": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "scoring": { "type": "object" },
+    "relays": { "type": "array" }
+  },
+  "additionalProperties": true
+}

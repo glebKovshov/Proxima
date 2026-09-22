@@ -1,0 +1,12 @@
+build/
+build-*/
+.vs/
+.idea/
+*.user
+*.suo
+*.pdb
+*.ilk
+*.exe
+*.zip
+Testing/
+CMakeUserPresets.json
