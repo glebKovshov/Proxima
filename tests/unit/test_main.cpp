@@ -75,6 +75,12 @@ void testMeasurementEngine() {
 
 void testScoring() {
     proxima::routing::RouteScoringEngine scoring;
+    proxima::core::RouteMetrics offline;
+    offline.packetLossPct = 100.0;
+    const auto offlineScore = scoring.score(offline);
+    expect(offlineScore.qualityScore == 0.0, "offline route has no quality score without successful samples");
+    expect(offlineScore.health == proxima::core::RouteHealth::Offline, "offline route is not presented as partially healthy");
+
     proxima::core::RouteMetrics fast;
     fast.rttAvgMs = 20;
     fast.jitterMs = 1;
@@ -145,6 +151,9 @@ void testConfigAndCache() {
     const auto result = resolver.resolve(std::nullopt);
     expect(result.source == proxima::backend::ConfigSource::Cache, "cache fallback is selected");
     std::filesystem::remove_all(temp, ignored);
+
+    expect(proxima::backend::ConfigManager::defaultConfig().diagnosticEndpoints.front() == "one.one.one.one",
+           "built-in diagnostic endpoint is resolvable");
 }
 
 void testDiscovery() {

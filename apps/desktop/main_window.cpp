@@ -346,7 +346,7 @@ void MainWindow::loadBackendConfig() {
 void MainWindow::pollGameProcess() {
     const auto process = processDetector_->detect();
     const bool running = process.has_value();
-    if (running != fortniteRunning_) {
+    if (running != fortniteRunning_ || applicationState_ == core::ApplicationState::Starting) {
         fortniteRunning_ = running;
         directTransport_->resetMetrics();
         if (running) {

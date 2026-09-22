@@ -12,7 +12,7 @@
     "FortniteClient-Win64-Shipping_EAC.exe"
   ],
   "diagnosticEndpoints": [
-    "ping.epicgames.com",
+    "one.one.one.one",
     "www.epicgames.com"
   ],
   "scoring": {

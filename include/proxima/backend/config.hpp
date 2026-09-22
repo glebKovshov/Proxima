@@ -16,7 +16,7 @@ struct BackendConfig {
     std::string latestVersion{"0.1.0"};
     bool maintenanceMode{false};
     core::GameProfile gameProfile;
-    std::vector<std::string> diagnosticEndpoints{"ping.epicgames.com", "www.epicgames.com"};
+    std::vector<std::string> diagnosticEndpoints{"one.one.one.one", "www.epicgames.com"};
     routing::ScoringParameters scoring;
     std::vector<core::RelayRouteMetadata> relays;
 };

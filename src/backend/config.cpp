@@ -122,7 +122,11 @@ std::optional<BackendConfig> ConfigParser::parse(const std::string_view payload,
     return config;
 }
 
-BackendConfig ConfigManager::defaultConfig() { return BackendConfig{}; }
+BackendConfig ConfigManager::defaultConfig() {
+    BackendConfig config;
+    config.diagnosticEndpoints = {"one.one.one.one", "www.epicgames.com"};
+    return config;
+}
 
 std::optional<BackendConfig> ConfigManager::loadValidated(const std::string_view payload, std::string* error) {
     return ConfigParser::parse(payload, error);

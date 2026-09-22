@@ -23,7 +23,11 @@ RouteScoringEngine::RouteScoringEngine(ScoringParameters parameters)
 
 ScoreResult RouteScoringEngine::score(const core::RouteMetrics& metrics) const {
     ScoreResult result;
-    if (metrics.sampleCount == 0 && metrics.packetLossPct <= 0.0) {
+    if (metrics.sampleCount == 0) {
+        if (metrics.packetLossPct >= 100.0) {
+            result.health = core::RouteHealth::Offline;
+            result.label = "Offline";
+        }
         return result;
     }
 
