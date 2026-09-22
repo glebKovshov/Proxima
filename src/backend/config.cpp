@@ -107,6 +107,12 @@ std::optional<BackendConfig> ConfigParser::parse(const std::string_view payload,
     if (const auto value = stringValue(payload, "region")) config.gameProfile.region = *value;
     if (const auto values = stringArray(payload, "executableNames"); !values.empty()) config.gameProfile.executableNames = values;
     config.diagnosticEndpoints = stringArray(payload, "diagnosticEndpoints");
+    const auto endpointLabels = stringArray(payload, "diagnosticEndpointLabels");
+    if (endpointLabels.size() == config.diagnosticEndpoints.size()) {
+        config.diagnosticEndpointLabels = endpointLabels;
+    } else {
+        config.diagnosticEndpointLabels.clear();
+    }
 
     setNumberIfPresent(payload, "rttWeight", config.scoring.rttWeight);
     setNumberIfPresent(payload, "jitterWeight", config.scoring.jitterWeight);
@@ -124,7 +130,6 @@ std::optional<BackendConfig> ConfigParser::parse(const std::string_view payload,
 
 BackendConfig ConfigManager::defaultConfig() {
     BackendConfig config;
-    config.diagnosticEndpoints = {"one.one.one.one", "www.epicgames.com"};
     return config;
 }
 

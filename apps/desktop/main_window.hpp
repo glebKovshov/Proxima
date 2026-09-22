@@ -21,6 +21,7 @@
 
 class QLabel;
 class QCloseEvent;
+class QComboBox;
 class QFrame;
 class QListWidget;
 class QPushButton;
@@ -44,6 +45,8 @@ protected:
 private:
     void buildUi();
     void configureTray();
+    void configureEndpointSelector();
+    void applyEndpointSelection(int index);
     void loadBackendConfig();
     void pollGameProcess();
     void requestMeasurement();
@@ -57,7 +60,7 @@ private:
 
     QLabel* fortniteStatus_{nullptr};
     QLabel* networkStatus_{nullptr};
-    QLabel* endpointLabel_{nullptr};
+    QComboBox* endpointSelector_{nullptr};
     QLabel* routeLabel_{nullptr};
     QLabel* diagnosticsStatus_{nullptr};
     QLabel* backendStatus_{nullptr};

@@ -12,8 +12,24 @@
     "FortniteClient-Win64-Shipping_EAC.exe"
   ],
   "diagnosticEndpoints": [
-    "one.one.one.one",
-    "www.epicgames.com"
+    "fra-de-ping.vultr.com",
+    "speedtest.frankfurt.linode.com",
+    "ams-nl-ping.vultr.com",
+    "lon-gb-ping.vultr.com",
+    "par-fr-ping.vultr.com",
+    "waw-pl-ping.vultr.com",
+    "sto-se-ping.vultr.com",
+    "mad-es-ping.vultr.com"
+  ],
+  "diagnosticEndpointLabels": [
+    "Frankfurt №1",
+    "Frankfurt №2",
+    "Amsterdam №1",
+    "London №1",
+    "Paris №1",
+    "Warsaw №1",
+    "Stockholm №1",
+    "Madrid №1"
   ],
   "scoring": {
     "rttWeight": 0.45,

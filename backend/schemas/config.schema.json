@@ -13,6 +13,7 @@
     "region": { "type": "string", "const": "europe" },
     "executableNames": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
     "diagnosticEndpoints": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "diagnosticEndpointLabels": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
     "scoring": { "type": "object" },
     "relays": { "type": "array" }
   },

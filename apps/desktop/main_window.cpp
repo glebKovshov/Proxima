@@ -8,6 +8,7 @@
 #include <QApplication>
 #include <QCloseEvent>
 #include <QColor>
+#include <QComboBox>
 #include <QFileDialog>
 #include <QFile>
 #include <QFormLayout>
@@ -32,6 +33,7 @@
 #include <QTimer>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <QSignalBlocker>
 #include <QtConcurrent/QtConcurrentRun>
 
 #include <algorithm>
@@ -168,6 +170,10 @@ void MainWindow::buildUi() {
         QListWidget { background:#171b22; border:1px solid #293241; border-radius:12px; padding:8px; }
         QListWidget::item { padding:10px; border-radius:8px; }
         QListWidget::item:selected { background:#23354a; }
+        QComboBox { background:#151a22; border:1px solid #334155; border-radius:7px; padding:7px 10px; font-size:14px; font-weight:600; color:#f4f7fb; }
+        QComboBox:hover { border-color:#72b7ff; }
+        QComboBox::drop-down { border:0; width:26px; }
+        QComboBox QAbstractItemView { background:#171b22; border:1px solid #334155; selection-background-color:#23354a; padding:4px; }
         QProgressBar { background:#151a22; border:0; border-radius:4px; height:7px; }
         QProgressBar::chunk { background:#72b7ff; border-radius:4px; }
     )");
@@ -220,8 +226,19 @@ void MainWindow::buildUi() {
     metricsGrid->addWidget(makeCard("Jitter", metricJitter_), 1, 0);
     metricsGrid->addWidget(makeCard("Packet loss", metricLoss_), 1, 1);
     metricsGrid->addWidget(makeCard("Stability", metricStability_), 1, 2);
-    auto* endpointCard = makeCard("Endpoint", endpointLabel_);
-    endpointLabel_->setStyleSheet("font-size:15px;font-weight:650;color:#f4f7fb;");
+    auto* endpointCard = new QFrame;
+    endpointCard->setStyleSheet(kPanel);
+    auto* endpointLayout = new QVBoxLayout(endpointCard);
+    endpointLayout->setContentsMargins(18, 14, 18, 16);
+    endpointLayout->addWidget(makeLabel("ENDPOINT", "font-size:11px;font-weight:600;color:#7f8da3;letter-spacing:1px;"));
+    endpointSelector_ = new QComboBox;
+    endpointSelector_->setMinimumWidth(205);
+    endpointSelector_->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    endpointSelector_->setMinimumContentsLength(16);
+    endpointLayout->addWidget(endpointSelector_);
+    connect(endpointSelector_, qOverload<int>(&QComboBox::currentIndexChanged), this, [this](const int index) {
+        applyEndpointSelection(index);
+    });
     metricsGrid->addWidget(endpointCard, 1, 3);
     outer->addLayout(metricsGrid);
 
@@ -316,6 +333,45 @@ void MainWindow::buildUi() {
     overlayLayout->addWidget(loadingCard, 0, Qt::AlignCenter);
     layers->addWidget(loadingOverlay_);
     setCentralWidget(canvas);
+    configureEndpointSelector();
+}
+
+void MainWindow::configureEndpointSelector() {
+    if (!endpointSelector_) return;
+
+    const auto previousHost = endpointSelector_->currentData().toString();
+    const QSignalBlocker blocker(endpointSelector_);
+    endpointSelector_->clear();
+
+    const auto& endpoints = backendConfig_.diagnosticEndpoints;
+    for (std::size_t index = 0; index < endpoints.size(); ++index) {
+        const auto label = backendConfig_.diagnosticEndpointLabels.size() == endpoints.size()
+            ? QString::fromStdString(backendConfig_.diagnosticEndpointLabels[index])
+            : QString("Europe №%1").arg(static_cast<int>(index + 1));
+        endpointSelector_->addItem(label, QString::fromStdString(endpoints[index]));
+    }
+
+    if (endpointSelector_->count() == 0) return;
+    auto selectedIndex = endpointSelector_->findData(previousHost);
+    if (selectedIndex < 0) selectedIndex = 0;
+    endpointSelector_->setCurrentIndex(selectedIndex);
+    if (directTransport_) {
+        directTransport_->setEndpoint(endpointSelector_->itemData(selectedIndex).toString().toStdString());
+    }
+}
+
+void MainWindow::applyEndpointSelection(const int index) {
+    if (!endpointSelector_ || index < 0 || index >= endpointSelector_->count() || !directTransport_) return;
+    const auto endpoint = endpointSelector_->itemData(index).toString().toStdString();
+    if (endpoint.empty()) return;
+
+    directTransport_->setEndpoint(endpoint);
+    directTransport_->resetMetrics();
+    startupLoading_ = true;
+    loadingDetail_->setText(QString("Проверяем %1 и пересчитываем метрики…").arg(endpointSelector_->itemText(index)));
+    loadingOverlay_->show();
+    loadingOverlay_->raise();
+    requestMeasurement();
 }
 
 void MainWindow::configureTray() {
@@ -372,9 +428,7 @@ void MainWindow::loadBackendConfig() {
         backendConfig_ = resolved.config;
         configSource_ = resolved.source;
         processDetector_->setProfile(backendConfig_.gameProfile);
-        if (!backendConfig_.diagnosticEndpoints.empty() && !fortniteRunning_) {
-            directTransport_->setEndpoint(backendConfig_.diagnosticEndpoints.front());
-        }
+        configureEndpointSelector();
         backendStatus_->setText(QString("Config: %1").arg(
             resolved.source == backend::ConfigSource::Remote ? "remote" :
             resolved.source == backend::ConfigSource::Cache ? "cache" : "built-in"));
@@ -392,21 +446,11 @@ void MainWindow::pollGameProcess() {
         if (running) {
             applicationState_ = core::ApplicationState::Monitoring;
             measurementTimer_->setInterval(1000);
-            if (process) {
-                const auto endpoints = endpointDiscovery_->discover(process->pid);
-                if (!endpoints.empty()) {
-                    endpointLabel_->setText(QString::fromStdString(endpoints.front().displayAddress()));
-                    if (endpoints.front().address != "0.0.0.0") {
-                        directTransport_->setEndpoint(endpoints.front().address);
-                    }
-                }
-            }
             updateFortniteStatus(true, "Active diagnostics");
             logger_->info("Discovery", "Fortnite process detected");
         } else {
             applicationState_ = core::ApplicationState::Idle;
             measurementTimer_->setInterval(5000);
-            directTransport_->setEndpoint(backendConfig_.diagnosticEndpoints.front());
             updateFortniteStatus(false, "Diagnostic endpoint mode");
             logger_->info("Discovery", "Fortnite process not detected");
         }
@@ -462,8 +506,6 @@ void MainWindow::updateMetrics(const core::RouteMetrics& metrics) {
     routesList_->item(0)->setText(QString("Direct   ·   %1   ·   %2")
         .arg(metricText(metrics.rttAvgMs))
         .arg(QString::fromStdString(scored.label)));
-    if (endpointLabel_->text() == "—") endpointLabel_->setText(QString::fromStdString(directTransport_->endpoint()));
-
     if (startupLoading_ && (metrics.sampleCount > 0 || metrics.packetLossPct > 0.0)) {
         startupLoading_ = false;
         loadingOverlay_->hide();

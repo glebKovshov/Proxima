@@ -130,6 +130,7 @@ void testConfigAndCache() {
         "region":"europe",
         "executableNames":["FortniteClient-Win64-Shipping.exe"],
         "diagnosticEndpoints":["example.com"],
+        "diagnosticEndpointLabels":["Example endpoint"],
         "rttWeight":0.5,
         "jitterWeight":0.2,
         "packetLossWeight":0.2,
@@ -139,6 +140,8 @@ void testConfigAndCache() {
     const auto config = proxima::backend::ConfigManager::loadValidated(payload, &error);
     expect(config.has_value(), "valid backend config parses");
     expect(config && config->diagnosticEndpoints.front() == "example.com", "backend endpoint is parsed");
+    expect(config && config->diagnosticEndpointLabels.front() == "Example endpoint",
+           "backend endpoint label is parsed");
     expect(config && config->scoring.rttWeight == 0.5, "backend scoring parameters are parsed");
     expect(!proxima::backend::ConfigManager::loadValidated("not json", &error), "malformed backend config is rejected");
 
@@ -152,8 +155,11 @@ void testConfigAndCache() {
     expect(result.source == proxima::backend::ConfigSource::Cache, "cache fallback is selected");
     std::filesystem::remove_all(temp, ignored);
 
-    expect(proxima::backend::ConfigManager::defaultConfig().diagnosticEndpoints.front() == "one.one.one.one",
+    const auto defaultConfig = proxima::backend::ConfigManager::defaultConfig();
+    expect(defaultConfig.diagnosticEndpoints.front() == "fra-de-ping.vultr.com",
            "built-in diagnostic endpoint is resolvable");
+    expect(defaultConfig.diagnosticEndpointLabels.front() == "Frankfurt №1",
+           "built-in diagnostic endpoint has a location label");
 }
 
 void testDiscovery() {
