@@ -12,6 +12,25 @@
 #include <IPExport.h>
 #include <IcmpAPI.h>
 #include <WS2tcpip.h>
+
+namespace {
+class WinsockSession final {
+public:
+    WinsockSession() {
+        WSADATA data{};
+        initialized_ = WSAStartup(MAKEWORD(2, 2), &data) == 0;
+    }
+
+    ~WinsockSession() {
+        if (initialized_) WSACleanup();
+    }
+
+    [[nodiscard]] bool initialized() const noexcept { return initialized_; }
+
+private:
+    bool initialized_{false};
+};
+}
 #endif
 
 namespace proxima::diagnostics {
@@ -20,11 +39,14 @@ std::optional<double> IcmpPingProbe::measure(
     const std::string& host,
     const std::chrono::milliseconds timeout) {
 #ifdef _WIN32
+    WinsockSession winsock;
+    if (!winsock.initialized()) return std::nullopt;
+
     addrinfo hints{};
     hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_RAW;
     addrinfo* resolved = nullptr;
-    if (getaddrinfo(host.c_str(), nullptr, &hints, &resolved) != 0 || resolved == nullptr) {
+    const auto addressInfoResult = getaddrinfo(host.c_str(), nullptr, &hints, &resolved);
+    if (addressInfoResult != 0 || resolved == nullptr) {
         return std::nullopt;
     }
 
